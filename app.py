@@ -1,5 +1,4 @@
 import streamlit as st
-import json
 import sqlite3
 from main import carregar_estoque, salvar_estoque, backup_reset, inicializar_banco
 
