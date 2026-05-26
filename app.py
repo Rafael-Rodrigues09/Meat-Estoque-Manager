@@ -1,10 +1,7 @@
 import streamlit as st
-import sqlite3
-from main import carregar_estoque, salvar_estoque, backup_reset, inicializar_banco
-
-inicializar_banco()
-dados = carregar_estoque()
-
+import requests
+dados_json = requests.get('http://127.0.0.1:8000/estoque')
+dados = dados_json.json()
 st.set_page_config(page_title='Estoque Açougue', page_icon='🥩')
 st.title('Anotações de carnes diárias')
 st.write('Estoque atual')
@@ -24,21 +21,22 @@ else:
 carne_escolhida = st.selectbox('Selecione a carne:', list(dados.keys()))
 quantidade = st.number_input('Quatidade usada(kg):', min_value= 0.0, step= 0.01)
 colb1, colb2, colb3 = st.columns(3)
+
 with colb1:
     if st.button('Registrar uso'):
-        dados[carne_escolhida]['usado_kg'] += quantidade
-        salvar_estoque(dados)
+        pacote = {'carne': carne_escolhida, 'quantidade': quantidade}
+        resposta = requests.post('http://127.0.0.1:8000/uso', json=pacote)  
         st.success(f'{carne_escolhida} registrado: {quantidade} kg adicionados')
         st.rerun()
 with colb2:
     if st.button('Registre a sobra'):
-        dados[carne_escolhida]['sobra_kg'] += quantidade
-        salvar_estoque(dados)
+        pacote = {'carne': carne_escolhida, 'quantidade': quantidade}
+        resposta = requests.post('http://127.0.0.1:8000/sobra', json=pacote)
         st.success(f'{carne_escolhida} registrado: {quantidade} kg adicionados')
         st.rerun()
 with colb3:
     if st.button('🚨 Resetar turno e salvar'):
-        backup_reset(dados)
+        resposta = requests.post('http://127.0.0.1:8000/reset')
         st.success('Dados resetados e salvos')
         st.rerun()
 

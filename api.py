@@ -52,7 +52,8 @@ def reset():
     dados = cursor.fetchall()
     with open(f'backup-{date.today()}.txt', 'w', encoding='UTF-8') as backup:
         for carne, usado, sobra in dados:
-            backup.write(f'{carne}: usado_kg {usado} --- sobra_kg {sobra}\n')
+            if usado != 0.0 or sobra != 0.0:
+                backup.write(f'{carne}: usado_kg {usado} --- sobra_kg {sobra}\n')
     cursor.execute('UPDATE estoque_carnes SET usado_kg = 0.0, sobra_kg = 0.0')
     conexao.commit()
     conexao.close()
