@@ -1,16 +1,84 @@
-import sqlite3
+import psycopg2
 from fastapi import FastAPI
 from pydantic import BaseModel
 from datetime import date
 
+def connect_banco():
+    conexao = psycopg2.connect(
+        host='localhost',
+        port='5432',
+        user='postgres',
+        password='root',
+        database='postgres'
+    )
+    return conexao
+
+def criar_banco():
+    conexao = connect_banco()
+    cursor = conexao.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS estoque_carnes(
+                    id SERIAL PRIMARY KEY,
+                    carne TEXT NOT NULL,
+                    usado_kg FLOAT NOT NULL,
+                    sobra_kg FLOAT NOT NULL
+                   )''')
+    lista_carnes = [
+    ("ACEM", 0.0, 0.0),
+    ("ALCATRA COMPLETA", 0, 0.0),
+    ("ANCHO", 0.0, 0.0),
+    ("ASA DE FRANGO", 0.0, 0.0),
+    ("BABY BEEF", 0.0, 0.0),
+    ("BIFE DO VAZIO", 0.0, 0.0),
+    ("CAPA DO FILÉ", 0.0, 0.0),
+    ("CARRÉ DE CARNEIRO", 0.0, 0.0),
+    ("CHORIZO", 0.0, 0.0),
+    ("CONTRA FILÉ", 0.0, 0.0),
+    ("COPA LOMBO (JAVALI)", 0.0, 0.0),
+    ("CORAÇÃO DE FRANGO", 0.0, 0.0),
+    ("COSTELA DE CARNEIRO", 0.0, 0.0),
+    ("COSTELA JANELA", 0.0, 0.0),
+    ("COSTELA MINGA", 0.0, 0.0),
+    ("COSTELA PRIME", 0.0, 0.0),
+    ("COSTELA SUÍNA", 0.0, 0.0),
+    ("COXA SOBRE COXA", 0.0, 0.0),
+    ("COXÃO MOLE", 0.0, 0.0),
+    ("CUPIM", 0.0, 0.0),
+    ("FILÉ DE FRANGO", 0.0, 0.0),
+    ("FILÉ MIGNON", 0.0, 0.0),
+    ("FRALDINHA", 0.0, 0.0),
+    ("LAGARTO", 0.0, 0.0),
+    ("LINGUIÇA", 0.0, 0.0),
+    ("LINGUIÇA APIMENTADA", 0.0, 0.0),
+    ("PALETA CARNEIRO", 0.0, 0.0),
+    ("PANCETA", 0.0, 0.0),
+    ("PICANHA", 0.0, 0.0),
+    ("PICANHA FATIADA", 0.0, 0.0),
+    ("PONTA DE PEITO", 0.0, 0.0),
+    ("PRIME", 0.0, 0.0),
+    ("QUEIJO", 0.0, 0.0),
+    ("SHOT RIBY", 0.0, 0.0),
+    ("T BONE CARNEIRO", 0.0, 0.0),
+    ("THIBON BOVINO", 0.0, 0.0),
+    ("MAMINHA", 0.0, 0.0),
+    ("LINGUIÇA CUIABANA", 0.0, 0.0),
+    ("PERNIL DE CARNEIRO", 0.0, 0.0)
+    ]
+    cursor.execute('SELECT COUNT(*) FROM estoque_carnes')
+    resultado = cursor.fetchone()
+    if resultado[0] == 0:
+        comando = ('INSERT INTO estoque_carnes (carne, usado_kg, sobra_kg) VALUES (%s, %s, %s)')
+        cursor.executemany(comando, lista_carnes)
+    conexao.commit()
+    conexao.close()
 class ModeloRegistro(BaseModel):
     carne: str
     quantidade: float
 
 app = FastAPI()
+criar_banco()
 @app.get('/estoque')
 def start_estoque():
-    conexao = sqlite3.connect('estoque.db')
+    conexao = connect_banco()
     cursor = conexao.cursor()
     cursor.execute('SELECT carne, usado_kg, sobra_kg FROM estoque_carnes')
     dados = cursor.fetchall()
@@ -22,9 +90,9 @@ def start_estoque():
 
 @app.post('/uso')
 def registrar_uso(dados: ModeloRegistro):
-    conexao = sqlite3.connect('estoque.db')
+    conexao = connect_banco()
     cursor = conexao.cursor()
-    comando = ('UPDATE estoque_carnes SET usado_kg = usado_kg + ? WHERE carne = ?')
+    comando = ('UPDATE estoque_carnes SET usado_kg = usado_kg + %s WHERE carne = %s')
     valores = (dados.quantidade, dados.carne)
     cursor.execute(comando, valores)
     conexao.commit()
@@ -34,9 +102,9 @@ def registrar_uso(dados: ModeloRegistro):
     
 @app.post('/sobra')
 def registrar_sobra(dados: ModeloRegistro):
-    conexao = sqlite3.connect('estoque.db')
+    conexao = connect_banco()
     cursor = conexao.cursor()
-    comando = ('UPDATE estoque_carnes SET sobra_kg = sobra_kg + ? WHERE carne = ?')
+    comando = ('UPDATE estoque_carnes SET sobra_kg = sobra_kg + %s WHERE carne = %s')
     valores = (dados.quantidade, dados.carne)
     cursor.execute(comando, valores)
     conexao.commit()
@@ -46,7 +114,7 @@ def registrar_sobra(dados: ModeloRegistro):
 
 @app.post('/reset')
 def reset():
-    conexao = sqlite3.connect('estoque.db')
+    conexao = connect_banco()
     cursor = conexao.cursor()
     cursor.execute('SELECT carne, usado_kg, sobra_kg FROM estoque_carnes')
     dados = cursor.fetchall()
