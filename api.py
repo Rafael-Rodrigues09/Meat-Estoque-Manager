@@ -1,5 +1,7 @@
 import psycopg2
+import os
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from datetime import date
 
@@ -118,14 +120,15 @@ def reset():
     cursor = conexao.cursor()
     cursor.execute('SELECT carne, usado_kg, sobra_kg FROM estoque_carnes')
     dados = cursor.fetchall()
-    with open(f'backup-{date.today()}.txt', 'w', encoding='UTF-8') as backup:
+    with open(f'backup.txt', 'w', encoding='UTF-8') as backup:
         for carne, usado, sobra in dados:
             if usado != 0.0 or sobra != 0.0:
                 backup.write(f'{carne}: usado_kg {usado} --- sobra_kg {sobra}\n')
     cursor.execute('UPDATE estoque_carnes SET usado_kg = 0.0, sobra_kg = 0.0')
     conexao.commit()
     conexao.close()
-    return {'status': 'sucesso', 'msg': 'dados resetados, backup salvo'}
+    caminho_arquivo = 'backup.txt'
+    return FileResponse(path=caminho_arquivo, filename=f'Backup{date.today()}.txt', media_type='text/plain')
 
 
 

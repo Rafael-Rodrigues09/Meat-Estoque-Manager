@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from datetime import date
 dados_json = requests.get('http://127.0.0.1:8000/estoque')
 dados = dados_json.json()
 st.set_page_config(page_title='Estoque Açougue', page_icon='🥩')
@@ -26,19 +27,18 @@ with colb1:
     if st.button('Registrar uso'):
         pacote = {'carne': carne_escolhida, 'quantidade': quantidade}
         resposta = requests.post('http://127.0.0.1:8000/uso', json=pacote)  
-        st.success(f'{carne_escolhida} registrado: {quantidade} kg adicionados')
         st.rerun()
 with colb2:
     if st.button('Registre a sobra'):
         pacote = {'carne': carne_escolhida, 'quantidade': quantidade}
         resposta = requests.post('http://127.0.0.1:8000/sobra', json=pacote)
-        st.success(f'{carne_escolhida} registrado: {quantidade} kg adicionados')
         st.rerun()
 with colb3:
-    if st.button('🚨 Resetar turno e salvar'):
+    def reset():
         resposta = requests.post('http://127.0.0.1:8000/reset')
-        st.success('Dados resetados e salvos')
         st.rerun()
+        return resposta.content
+    st.download_button(label='🚨Resetar turno e salvar', data=reset, file_name=f'Backup-{date.today()}.txt', mime='text/plain')
 
 
 
