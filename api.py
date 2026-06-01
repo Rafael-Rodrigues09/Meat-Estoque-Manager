@@ -1,16 +1,24 @@
 import psycopg2
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from datetime import date
+from dotenv import load_dotenv
+
+load_dotenv()
+API_TOKEN = os.getenv('API_TOKEN')
+
+def api_door(x_token: str = Header(...)):
+    if x_token != API_TOKEN:
+        raise HTTPException(status_code=401, detail="Acesso negado")
 
 def connect_banco():
     conexao = psycopg2.connect(
         host='localhost',
         port='5432',
         user='postgres',
-        password='root',
+        password=API_TOKEN,
         database='postgres'
     )
     return conexao
@@ -75,11 +83,12 @@ def criar_banco():
 class ModeloRegistro(BaseModel):
     carne: str
     quantidade: float
-
+class Senha(BaseModel):
+    senha: str
 app = FastAPI()
 criar_banco()
 @app.get('/estoque')
-def start_estoque():
+def show_estoque(verify = Depends(api_door)):
     conexao = connect_banco()
     cursor = conexao.cursor()
     cursor.execute('SELECT carne, usado_kg, sobra_kg FROM estoque_carnes')
@@ -91,7 +100,7 @@ def start_estoque():
     return dicionario
 
 @app.post('/uso')
-def registrar_uso(dados: ModeloRegistro):
+def registrar_uso(dados: ModeloRegistro, verify = Depends(api_door)):
     conexao = connect_banco()
     cursor = conexao.cursor()
     comando = ('UPDATE estoque_carnes SET usado_kg = usado_kg + %s WHERE carne = %s')
@@ -103,7 +112,7 @@ def registrar_uso(dados: ModeloRegistro):
     
     
 @app.post('/sobra')
-def registrar_sobra(dados: ModeloRegistro):
+def registrar_sobra(dados: ModeloRegistro, verify = Depends(api_door)):
     conexao = connect_banco()
     cursor = conexao.cursor()
     comando = ('UPDATE estoque_carnes SET sobra_kg = sobra_kg + %s WHERE carne = %s')
@@ -115,7 +124,7 @@ def registrar_sobra(dados: ModeloRegistro):
     
 
 @app.post('/reset')
-def reset():
+def reset(verify = Depends(api_door)):
     conexao = connect_banco()
     cursor = conexao.cursor()
     cursor.execute('SELECT carne, usado_kg, sobra_kg FROM estoque_carnes')
@@ -129,8 +138,6 @@ def reset():
     conexao.close()
     caminho_arquivo = 'backup.txt'
     return FileResponse(path=caminho_arquivo, filename=f'Backup{date.today()}.txt', media_type='text/plain')
-
-
 
 
 

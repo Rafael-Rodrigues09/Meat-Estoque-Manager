@@ -4,3 +4,5 @@ estoque.json
 estoque.db
 *.txt
 banco.py
+.env
+.vscode
