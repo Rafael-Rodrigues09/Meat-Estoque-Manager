@@ -1,0 +1,5 @@
+fastapi==0.136.3
+psycopg2_binary==2.9.12
+pydantic==2.13.4
+python-dotenv==1.2.2
+SQLAlchemy==2.0.50
