@@ -7,8 +7,8 @@ from fastapi.responses import FileResponse
 
 def connect():
     load_dotenv()
-    senha = os.getenv('API_TOKEN')
-    engine = create_engine(f'postgresql+psycopg2://postgres:{senha}@localhost:5432/postgres')
+    url = os.getenv('DATA_URL')
+    engine = create_engine(url)
     SessionLocal = sessionmaker(bind=engine)
     Base = declarative_base()
     return Base, engine, SessionLocal
