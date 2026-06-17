@@ -21,8 +21,7 @@ Base, engine, SessionLocal = connect()
 class ModeloRegistro(BaseModel):
     carne_nome: str
     valor: float
-class Senha(BaseModel):
-    senha: str
+
 app = FastAPI()
 criar_banco()
 
