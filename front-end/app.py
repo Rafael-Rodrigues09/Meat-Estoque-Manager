@@ -8,8 +8,16 @@ load_dotenv()
 API_TOKEN = os.getenv('API_TOKEN')
 api_acess = {'x-token': API_TOKEN}
 API_URL = os.getenv('API_URL')
-dados_json = requests.get(f'{API_URL}/estoque', headers=api_acess)
-dados = dados_json.json()
+try:
+    resposta = requests.get(f'{API_URL}/estoque', headers=api_acess)
+    if resposta.status_code == 200:
+        dados = resposta.json()
+    else:
+        st.warning('API DESLIGADA. LIGUE A API COM O SEGUINTE LINK E DEPOIS REINICIE O SITE: https://nativas-grill-estoque-manager.onrender.com/')
+        st.stop()
+except:
+    st.warning('NÃO FOI POSSIVEL ACESSAR O SERVIDOR.')
+    st.stop()
 st.set_page_config(page_title='Estoque Açougue', page_icon='🥩')
 st.title('Anotações de carnes diárias')
 st.write('Estoque atual')
