@@ -35,19 +35,25 @@ else:
     st.write('Nenhuma carne adicionada')
 
 carne_nome = st.selectbox('Selecione a carne:', list(dados.keys()))
-valor = st.number_input('Quatidade usada(kg):', min_value= 0.0, step= 0.01)
+valor = st.number_input('Quatidade usada(kg):', min_value= 0.0, step= 0.01, format='%.2f')
 colb1, colb2, colb3 = st.columns(3)
 
 with colb1:
     if st.button('Registrar uso'):
         pacote = {'carne_nome': carne_nome, 'valor': valor}
-        resposta = requests.post(f'{API_URL}/uso', json=pacote, headers=api_acess)  
-        st.rerun()
+        if valor > 0:
+            resposta = requests.post(f'{API_URL}/uso', json=pacote, headers=api_acess)  
+            st.rerun()
+        else:
+            st.error('Digite um valor maior que 0')
 with colb2:
     if st.button('Registre a sobra'):
         pacote = {'carne_nome': carne_nome, 'valor': valor}
-        resposta = requests.post(f'{API_URL}/sobra', json=pacote, headers=api_acess)
-        st.rerun()
+        if valor > 0:
+            resposta = requests.post(f'{API_URL}/sobra', json=pacote, headers=api_acess)
+            st.rerun()
+        else:
+            st.error('Digite um valor maior que 0')
 with colb3:
     def reset():
         resposta = requests.post(f'{API_URL}/reset', headers=api_acess)
