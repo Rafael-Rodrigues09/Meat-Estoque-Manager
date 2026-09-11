@@ -122,9 +122,21 @@ def add_lot(name, value, expiration_date):
 def add_usage(name, value):
     with SessionLocal() as session:
         meat = session.scalars(select(Meats).where(Meats.name == name)).first()
-        if not meat:
-            return {'status': 'invalid'}
-        meat.usage_kg += value
+        if not meat: return {'status': 'invalid'}
+        query = session.scalars(select(Lot).where(Lot.name == name, Lot.is_active == True).order_by(Lot.expiration_date.asc())).all()
+        if not query: return {'status': 'invalid'}
+        result = sum(lot.current_kg for lot in query)
+        if value > result: return {'status': 'insufficient'}
+        remain = value
+        for lot in query:
+            if lot.current_kg <= remain:
+                remain -= lot.current_kg
+                lot.current_kg = 0
+                lot.is_active = False
+            elif lot.current_kg > remain:
+                lot.current_kg -= remain
+                remain = 0
+                break
         session.add(History(name=name, type='usado', value=value))
         session.commit()
         return {'status': 'success'}

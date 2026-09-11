@@ -38,12 +38,13 @@ def rote_show_data(verify = Depends(api_door)):
     return get_data()
 
 @app.get('/historico')
-def rote_show_history():
+def rote_show_history(verify = Depends(api_door)):
     return get_history()
 
 @app.get('/allestoque')
 def rote_show_lot(verift = Depends(api_door)):
     return get_lot()
+
 @app.post('/add-estoque')
 def rote_add_lot(data: ModeloLot, verify = Depends(api_door)):
     return add_lot(name=data.name, value=data.value, expiration_date=data.expiration_date)
