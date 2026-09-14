@@ -10,10 +10,11 @@ st.set_page_config(page_title='Estoque Açougue', page_icon='🥩')
 
 load_dotenv()
 API_TOKEN = os.getenv('API_TOKEN')
-api_acess = {'x-token': API_TOKEN}
+API_ACESS = {'x-token': API_TOKEN}
 API_URL = os.getenv('API_URL')
 USER_PASS = os.getenv('USER_PASS')
 ADMIN_PASS = os.getenv('ADMIN_PASS')
+STORAGE_PASS = os.getenv('STORAGE_PASS')
 if not 'logged' in st.session_state:
     st.session_state['logged'] = False
 if st.session_state['logged'] == False:
@@ -27,23 +28,24 @@ if st.session_state['logged'] == False:
             st.session_state['logged'] = True
             st.session_state['screen'] = 'history_tab'
             st.rerun()
+        elif digited_pass == STORAGE_PASS:
+            st.session_state['logged'] = True
+            st.session_state['screen'] = 'storage_tab'
+            st.rerun()
         else:
             st.error('Senha incorreta')
     st.stop()
 def screen_add_meats():    
     try:
-        response = requests.get(f'{API_URL}/estoque', headers=api_acess)
-        if response.status_code == 200:
-            data = response.json()
+        response = requests.get(f'{API_URL}/estoque', headers=API_ACESS)
+        if response.status_code == 200: data = response.json()
         else:
             st.warning('API DESLIGADA. LIGUE A API COM O SEGUINTE LINK E DEPOIS REINICIE O SITE: https://nativas-grill-estoque-manager.onrender.com/')
             st.stop()
     except:
         st.warning('NÃO FOI POSSÍVEL ACESSAR O SERVIDOR.')
         st.stop()
-    st.set_page_config(page_title='Estoque Açougue', page_icon='🥩')
     st.title('Anotações de carnes diárias')
-    st.write('Estoque atual')
     usage_meats = []
     for meat, value in data.items():
         if value['usage_kg'] > 0 or value['rest_kg'] > 0:
@@ -65,7 +67,7 @@ def screen_add_meats():
         if st.button('Registrar uso'):
             package = {'name': meat_name, 'value': value}
             if value > 0:
-                response = requests.post(f'{API_URL}/uso', json=package, headers=api_acess)
+                response = requests.post(f'{API_URL}/uso', json=package, headers=API_ACESS)
                 st.rerun()
             else:
                 st.error('Digite um valor maior que 0')
@@ -73,7 +75,7 @@ def screen_add_meats():
         if st.button('Registre a sobra'):
             package = {'name': meat_name, 'value': value}
             if value > 0:
-                response = requests.post(f'{API_URL}/sobra', json=package, headers=api_acess)
+                response = requests.post(f'{API_URL}/sobra', json=package, headers=API_ACESS)
                 st.rerun()
             else:
                 st.error('Digite um valor maior que 0')
@@ -87,7 +89,7 @@ def screen_add_meats():
             if st.button('NÃO'): st.rerun()
 
     def reset():
-            response = requests.post(f'{API_URL}/reset', headers=api_acess)
+            response = requests.post(f'{API_URL}/reset', headers=API_ACESS)
             return response.content
     with colb3:
         if st.button('🚨 RESETAR E SALVAR'):
@@ -95,7 +97,7 @@ def screen_add_meats():
             
     with colb4:
         if st.button('⟳ Reverter valor'):
-            response = requests.post(f'{API_URL}/reverse', headers=api_acess)
+            response = requests.post(f'{API_URL}/reverse', headers=API_ACESS)
             st.rerun()
     with colb5:
         if st.button('sair'):
@@ -104,7 +106,7 @@ def screen_add_meats():
 
 def screen_history_tab():
     try:
-        response = requests.get(f'{API_URL}/historico', headers=api_acess)
+        response = requests.get(f'{API_URL}/historico', headers=API_ACESS)
         if response.status_code == 200:
             data = response.json()
         else:
@@ -121,16 +123,54 @@ def screen_history_tab():
         st.dataframe(df)
         
     else:
-        st.info('Nada no estoque no momento')
+        st.info('Nada no histórico no momento')
         
     if st.button('sair'):
         st.session_state['logged'] = False
-        st.rerun()        
+        st.rerun()   
+def screen_storage():
+    try:
+        response_storage = requests.get(f'{API_URL}/allestoque', headers=API_ACESS)
+        response_products = requests.get(f'{API_URL}/estoque', headers=API_ACESS)
+        if response_storage.status_code == 200: data = response_storage.json()
+        else:
+            st.warning('API DESLIGADA. LIGUE A API COM O SEGUINTE LINK E DEPOIS REINICIE O SITE: https://nativas-grill-estoque-manager.onrender.com/')
+            st.stop()
+        if response_products.status_code == 200: products = response_products.json()
+        else: 
+            st.warning('Sem produtos')
+    except:
+        st.warning('Não foi possivel acessar o servidor')
+    st.title('Estoque')
+    if not data: st.info('Nada no estoque no momento')
+    else:
+        df = pd.DataFrame(data)
+        df['entry_date'] = pd.to_datetime(df['entry_date'], utc=True).dt.tz_convert('America/Cuiaba').dt.strftime('%d/%m/%Y | %H: %M')
+        st.dataframe(df)
+        st.title('Adicionar produtos ao estoque')
+        selected_product = st.selectbox('Escolha o produto', [product for product in products], key='selected_product')
+        value = st.number_input('Quantidade (KG, QTD)')
+        expiration_date = st.date_input('Digite a data de validade(ano/mês/dia)')
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button('Adicionar'): 
+                if value > 0:
+                    response = requests.post(f'{API_URL}/add-estoque', json={'name': selected_product, 'value': value, 'expiration_date': str(expiration_date)}, headers=API_ACESS)
+                    st.rerun()
+                else:
+                    st.warning('Digite um valor valido')
+        with col2:
+            if st.button('voltar'): 
+                st.session_state['logged'] = False 
+                st.rerun()
 if st.session_state['screen'] == 'add_tab':
     screen_add_meats()
 
 elif st.session_state['screen'] == 'history_tab':
     screen_history_tab()
+
+elif st.session_state['screen'] == 'storage_tab':
+    screen_storage()
 
 
 
