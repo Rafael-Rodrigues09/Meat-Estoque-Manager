@@ -150,22 +150,22 @@ def screen_storage():
         df = pd.DataFrame(data)
         df['entry_date'] = pd.to_datetime(df['entry_date'], utc=True).dt.tz_convert('America/Cuiaba').dt.strftime('%d/%m/%Y | %H: %M')
         st.dataframe(df)
-        st.title('Adicionar produtos ao estoque')
-        selected_product = st.selectbox('Escolha o produto', [product for product in products], key='selected_product')
-        value = st.number_input('Quantidade (KG, QTD)')
-        expiration_date = st.date_input('Digite a data de validade(ano/mês/dia)')
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button('Adicionar'): 
-                if value > 0:
-                    response = requests.post(f'{API_URL}/add-estoque', json={'name': selected_product, 'value': value, 'expiration_date': str(expiration_date)}, headers=API_ACESS)
-                    st.rerun()
-                else:
-                    st.warning('Digite um valor valido')
-        with col2:
-            if st.button('voltar'): 
-                st.session_state['logged'] = False 
+    st.title('Adicionar produtos ao estoque')
+    selected_product = st.selectbox('Escolha o produto', [product for product in products], key='selected_product')
+    value = st.number_input('Quantidade (KG, QTD)')
+    expiration_date = st.date_input('Digite a data de validade(ano/mês/dia)')
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button('Adicionar'): 
+            if value > 0:
+                response = requests.post(f'{API_URL}/add-estoque', json={'name': selected_product, 'value': value, 'expiration_date': str(expiration_date)}, headers=API_ACESS)
                 st.rerun()
+            else:
+                st.warning('Digite um valor valido')
+    with col2:
+        if st.button('voltar'): 
+            st.session_state['logged'] = False 
+            st.rerun()
 if st.session_state['screen'] == 'add_tab':
     screen_add_meats()
 
