@@ -138,6 +138,7 @@ def add_usage(name, value):
                 remain = 0
                 break
         session.add(History(name=name, type='usado', value=value))
+        meat.usage_kg += value
         session.commit()
         return {'status': 'success'}
               

@@ -45,6 +45,7 @@ O projeto utiliza o docker-compose para orquestração automática do banco de d
 - USER_PASS=sua-senha-front-end
 - ADMIN_PASS=sua-senha-historico
 - API_URL=http://api:8000
+- STORAGE_PASs=sua-senha-estoque
 
 3. Execute no terminal o Docker compose e suba a infraestrutura:
 - docker compose up --build

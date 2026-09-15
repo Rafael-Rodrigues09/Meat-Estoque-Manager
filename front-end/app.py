@@ -68,7 +68,10 @@ def screen_add_meats():
             package = {'name': meat_name, 'value': value}
             if value > 0:
                 response = requests.post(f'{API_URL}/uso', json=package, headers=API_ACESS)
-                st.rerun()
+                result = response.json()
+                if result.get('status') == 'success': st.rerun()
+                elif result.get('status') == 'invalid' or result.get('status') == 'insufficient': st.warning('Valor insuficiente no estoque')
+                
             else:
                 st.error('Digite um valor maior que 0')
     with colb2:
