@@ -1,15 +1,11 @@
 {
   "name": "Meat-Estoque-Manager Dev Environment",
-  "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bullseye",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bookworm",
   
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest",
       "enableNonRootDocker": "true"
-    },
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": "true",
-      "username": "vscode"
     }
   },
 
@@ -30,16 +26,13 @@
     "vscode": {
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
-        "python.linting.enabled": true,
-        "editor.formatOnSave": true,
-        "editor.tabSize": 4
+        "editor.formatOnSave": true
       },
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
         "charliermarsh.ruff",
         "ms-azuretools.vscode-docker",
-        "tamasfe.even-better-toml",
         "mtxr.sqltools",
         "mtxr.sqltools-driver-pg"
       ]
