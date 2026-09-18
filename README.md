@@ -8,6 +8,7 @@ A interface do Streamlit implementa controle de visualização por perfil (RBAC)
 
 - Perfil Operador (Lançamentos rápidos de pesagem e reversão imediata): [INSIRA A USER_PASS DO .ENV]
 - Perfil Administrador (Acesso ao histórico de auditoria, indicadores de reversão e relatórios): [INSIRA A ADMIN_PASS DO .ENV]
+- Perfil Estoquista (Acesso ao estoque geral e adicionamento de produtos): [INSIRA A STORAGE_PASS DO .ENV]
 
 ## Contexto Operacional (O Problema)
 O controle de estoque no setor de perecíveis (carnes) em ambientes de alta demanda (churrascarias) é tradicionalmente feito de forma manual em papel. Esse método gera perda de histórico, inconsistência de dados e falhas de auditoria. 
