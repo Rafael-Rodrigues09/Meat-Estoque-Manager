@@ -1,52 +1,97 @@
-# - Sistema de Gestão de Estoque Perecíveis
+======================================================================
+MEAT-ESTOQUE-MANAGER (ENTERPRISE WMS & AUDITORIA)
+======================================================================
+Plataforma de Microsserviços para Gestão de Estoque Perecível, 
+Auditoria Transacional e Controle de Lotes (PVPS).
 
-## Links de Produção:
-- Front-end (Interface): https://meat-estoque-manager-nativas.streamlit.app/
-- Back-end (API Docs): https://nativas-grill-estoque-manager.onrender.com/docs
+----------------------------------------------------------------------
+1. ACESSO ONLINE (LIVE DEMOS)
+----------------------------------------------------------------------
+- Front-end (UI): https://meat-estoque-manager-nativas.streamlit.app
+- Back-end (Docs): https://nativas-grill-estoque-manager.onrender.com/docs
+- API Healthcheck: https://nativas-grill-estoque-manager.onrender.com/health
 
-A interface do Streamlit implementa controle de visualização por perfil (RBAC). Para testar os diferentes fluxos na aplicação online, utilize as credenciais abaixo:
+Nota de Infraestrutura: O backend reside no Free Tier do Render. O Cold 
+Start pode levar cerca de 50 segundos. Um monitor UptimeRobot pinga a 
+rota /health a cada 5 minutos para evitar hibernação.
 
-- Perfil Operador (Lançamentos rápidos de pesagem e reversão imediata): [INSIRA A USER_PASS DO .ENV]
-- Perfil Administrador (Acesso ao histórico de auditoria, indicadores de reversão e relatórios): [INSIRA A ADMIN_PASS DO .ENV]
-- Perfil Estoquista (Acesso ao estoque geral e adicionamento de produtos): [INSIRA A STORAGE_PASS DO .ENV]
+----------------------------------------------------------------------
+2. CONTEXTO OPERACIONAL (O PROBLEMA DE NEGÓCIO)
+----------------------------------------------------------------------
+O controle de insumos perecíveis (carnes) em churrascarias de alto volume 
+gera falhas críticas quando feito em papel: perda de histórico, descarte 
+de produtos por validade (falta de PVPS) e falhas de auditoria. 
 
-## Contexto Operacional (O Problema)
-O controle de estoque no setor de perecíveis (carnes) em ambientes de alta demanda (churrascarias) é tradicionalmente feito de forma manual em papel. Esse método gera perda de histórico, inconsistência de dados e falhas de auditoria. 
+Este projeto substitui a prancheta física por um Warehouse Management 
+System (WMS) digital, transacional e conteinerizado.
 
-Este projeto foi desenvolvido para substituir a prancheta física por um sistema digital, persistente, conteinerizado e de alta disponibilidade.
+----------------------------------------------------------------------
+3. DIFERENCIAIS DE ENGENHARIA E REGRAS DE NEGÓCIO
+----------------------------------------------------------------------
+[A] MOTOR WMS DE LOTES E CASCATA PVPS (FEFO)
+O estoque é mapeado em Lotes Físicos (Tabela 'lots'). O backend abate o 
+consumo de carne automaticamente dos lotes mais próximos do vencimento 
+(ORDER BY expiration_date ASC), garantindo a regra Primeiro que Vence, 
+Primeiro que Sai (PVPS) e inativando lotes vazios de forma atômica.
 
-## Arquitetura do Sistema
-A aplicação foi arquitetada sob o modelo de Microserviços Desacoplados, separando totalmente as responsabilidades de interface, regras de negócio e persistência de dados. O projeto está estruturado em um formato de Monorepo.
+[B] AUDITORIA IMUTÁVEL COM SOFT ROLLBACK (LIFO)
+O sistema impede a exclusão física de registros (DELETE) para preservar a 
+consistência de dados. A reversão de operações (/reverse) utiliza uma 
+pilha LIFO que restaura o saldo e marca o log com a flag booleana 
+'is_reversed = True', mantendo a trilha de auditoria forense intacta.
 
-## Stack Tecnológica:
-- Back-end (API): Python, FastAPI (Arquitetura assíncrona, injeção de dependência e validação estrita com Pydantic).
-- Banco de Dados: PostgreSQL isolado com persistência de volumes.
-- ORM: SQLAlchemy 2.0 para mapeamento objeto-relacional seguro contra SQL Injection.
-- Front-end: Streamlit (Dumb Client consumindo a API RESTful via requests HTTP).
-- Infraestrutura / DevOps: Docker, Docker Compose e Deploy na nuvem (Render) com Zero Downtime.
+[C] TRATAMENTO DE TIMEZONE EM MÚLTIPLAS CAMADAS
+- Persistência: PostgreSQL salva timestamps em UTC (DateTime(timezone=True)).
+- Apresentação: Frontend em Streamlit converte o fuso horário para a 
+  localidade da operação (America/Cuiaba) utilizando vetorização do Pandas.
 
-## Regras de Negócio e Segurança
-- Isolamento de Estado: O front-end não possui conexão com o banco de dados. Toda requisição passa obrigatoriamente pela API.
-- Segurança de Rotas: As rotas de mutação (POST/UPDATE) são protegidas por autenticação via Headers (x-token), validados através de variáveis de ambiente (.env).
-- Auditoria Imutável (Soft Rollback): A reversão de operações (/reverse) utiliza controle transacional LIFO sem deleção física no PostgreSQL. O registro original é mantido com a flag is_reversed = True, preservando 100% do histórico contábil para auditoria.
-- Rotina EOD (End of Day): O sistema possui um gatilho de fechamento de turno que realiza o dump do banco, gera um arquivo de backup sanitizado em .pdf com timestamp e reseta a tabela para o turno seguinte.
+[D] CONTROLE DE ACESSO BASEADO EM PAPÉIS (RBAC)
+Máquina de estados (st.session_state) no cliente dividindo fluxos:
+- Operador: Pesagem de saída e reversão.
+- Estoquista: Inventário geral e entrada de lotes novos.
+- Administrador: Log forense, indicadores e fechamento de turno.
 
-## Como rodar localmente (Dev Environment)
+----------------------------------------------------------------------
+4. ARQUITETURA DO SISTEMA (MICROSSERVIÇOS / MONOREPO)
+----------------------------------------------------------------------
+Desacoplamento total entre Front-end (Dumb Client) e Back-end (REST API):
+- Back-end: FastAPI Assíncrono com injeção de dependência e Pydantic.
+- Banco de Dados: PostgreSQL isolado com SQLAlchemy 2.0 (ORM).
+- Front-end: Streamlit consumindo a API via requests HTTP.
+- Infraestrutura: Docker, Docker Compose, DevContainers (GitHub Codespaces).
 
-O projeto utiliza o docker-compose para orquestração automática do banco de dados, API e Frontend em uma rede de contêineres isolada.
+----------------------------------------------------------------------
+5. COMO EXECUTAR O PROJETO LOCALMENTE
+----------------------------------------------------------------------
+[OPÇÃO A] Nuvem com 1-Click (DevContainers)
+O repositório possui devcontainer.json nativo com Docker-in-Docker. Ao 
+criar um Codespace, a máquina subirá com Python 3.11, Docker Compose e 
+extensões do VS Code pré-instaladas no navegador.
 
-1. Clone este repositório:
-- git clone https://github.com/Rafael-Rodrigues09/Meat-Estoque-Manager.git
-- cd Meat-Estoque-Manager
+[OPÇÃO B] Deploy Local (Docker Compose)
+1. Clone o repositório:
+   git clone https://github.com/Rafael-Rodrigues09/Meat-Estoque-Manager.git
+   cd Meat-Estoque-Manager
 
-2. Crie um arquivo .env na raiz do projeto contendo as seguintes variáveis:
-- API_TOKEN=sua_senha_segura_da_api
-- DATA_PASS=senha_do_banco_postgres
-- DATA_URL=postgresql+psycopg2://postgres:${DATA_PASS}@db:5432/postgres
-- USER_PASS=sua-senha-front-end
-- ADMIN_PASS=sua-senha-historico
-- API_URL=http://api:8000
-- STORAGE_PASS=sua-senha-estoque
+2. Crie um arquivo .env na raiz:
+   API_TOKEN=sua_senha_segura
+   DATA_PASS=senha_db_postgres
+   DATA_URL=postgresql+psycopg2://postgres:${DATA_PASS}@db:5432/postgres
+   USER_PASS=senha_frontend
+   ADMIN_PASS=senha_historico
+   STORAGE_PASS=senha_estoque
+   API_URL=http://api:8000
 
-3. Execute no terminal o Docker compose e suba a infraestrutura:
-- docker compose up --build
+3. Suba a infraestrutura:
+   docker compose up --build -d
+
+----------------------------------------------------------------------
+6. ENDPOINTS PRINCIPAIS DA API
+----------------------------------------------------------------------
+- GET /estoque       : Retorna saldo consolidado de carnes.
+- POST /add-estoque  : Registra entrada de lotes físicos com validade.
+- GET /allestoque    : Lista lotes ativos ordenados por vencimento.
+- POST /uso          : Registra consumo e gera histórico em cascata.
+- POST /reverse      : Executa rollback atômico (LIFO).
+- POST /reset        : Gera backup sanitizado em PDF e zera o turno.
+======================================================================
