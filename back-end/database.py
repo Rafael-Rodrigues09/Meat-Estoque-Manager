@@ -97,36 +97,30 @@ def get_data():
 def get_lot():
     with SessionLocal() as session:
         results = session.scalars(select(Lot).order_by(Lot.expiration_date.asc())).all()
-        return [
-            {'name': result.name,
-            'initial_kg': result.initial_kg, 
-            'current_kg': result.current_kg, 
-            'entry_date': result.entry_date, 
-            'expiration_date': result.expiration_date, 
-            'is_active': result.is_active
-            } 
-            for result in results
-
-            ]
+        return [{'name':result.name,'initial_kg':result.initial_kg,'current_kg':result.current_kg,'entry_date':result.entry_date,'expiration_date':result.expiration_date,'is_active':result.is_active} for result in results]
 def get_history():
     with SessionLocal() as session:
         results = session.scalars(select(History)).all()
         return [{'name': meat.name, 'value': meat.value, 'type': meat.type, 'date': meat.date, 'revertido': meat.is_reversed} for meat in results]
 
 def add_lot(name, value, expiration_date):
-    if value <= 0: return {'status': 'invalid'}
     with SessionLocal() as session:
-        session.add(Lot(name=name, initial_kg=value, current_kg=value, expiration_date=expiration_date))
+        meat = session.scalars(select(Meats).where(Meats.name == name)).first()
+        if not meat: raise ValueError('invalid name')
+        new_lot = Lot(name=name, initial_kg=value, current_kg=value, expiration_date=expiration_date)
+        session.add(new_lot)
         session.commit()
-        return {'status': 'sucess'}
+        session.refresh(new_lot)
+        return{'id': new_lot.id, 'name': new_lot.name, 'initial_kg': new_lot.initial_kg, 'current_kg': new_lot.current_kg, 'expiration_date': new_lot.expiration_date}
+        
 def add_usage(name, value):
     with SessionLocal() as session:
         meat = session.scalars(select(Meats).where(Meats.name == name)).first()
-        if not meat: return {'status': 'invalid'}
+        if not meat: raise ValueError('invalid name')
         query = session.scalars(select(Lot).where(Lot.name == name, Lot.is_active == True).order_by(Lot.expiration_date.asc())).all()
         if not query: return {'status': 'invalid'}
         result = sum(lot.current_kg for lot in query)
-        if value > result: return {'status': 'insufficient'}
+        if value > result: raise ValueError('insufficient value')
         remain = value
         for lot in query:
             if lot.current_kg <= remain:
@@ -145,8 +139,7 @@ def add_usage(name, value):
 def add_rest(name, value):
     with SessionLocal() as session:
         meat = session.scalars(select(Meats).where(Meats.name == name)).first()
-        if not meat:
-            return {'status': 'invalid'}        
+        if not meat: raise ValueError('invalid name')          
         meat.rest_kg += value
         session.add(History(name=name, type='sobra', value=value))
         session.commit()
@@ -186,7 +179,7 @@ def reverse():
             last.is_reversed = True
             session.commit()
             return {'status': 'success', 'date': last.date}
-        return {'status': 'invalid'}
+        raise ValueError('none item')
 
             
 

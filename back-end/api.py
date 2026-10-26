@@ -2,9 +2,9 @@ import psycopg2
 import os
 from sqlalchemy import create_engine, String, Float, Integer, Column, select, update
 from sqlalchemy.orm import declarative_base, sessionmaker
-from fastapi import FastAPI, HTTPException, Header, Depends
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Header, Depends, Request
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, Field
 from datetime import date
 from dotenv import load_dotenv
 from database import connect, Meats, create_data, add_usage, add_rest, reset, get_data, reverse, get_history, add_lot, get_lot
@@ -20,15 +20,19 @@ Base, engine, SessionLocal = connect()
 
 class ModeloRegistro(BaseModel):
     name: str
-    value: float
+    value: float = Field(gt=0)
 
 class ModeloLot(BaseModel):
     name: str
-    value: float
+    value: float = Field(gt=0)
     expiration_date: date
 
 app = FastAPI()
 create_data()
+
+@app.exception_handler(ValueError)
+def ValueError_handler(request: Request, exc: ValueError):
+    return JSONResponse(status_code=400, content={'detail': str(exc)})
 
 @app.api_route('/health', methods=['GET', 'HEAD'])
 def check_health(): return {'status': 'valid'}
@@ -42,7 +46,7 @@ def rote_show_history(verify = Depends(api_door)):
     return get_history()
 
 @app.get('/allestoque')
-def rote_show_lot(verift = Depends(api_door)):
+def rote_show_lot(verify = Depends(api_door)):
     return get_lot()
 
 @app.post('/add-estoque')
@@ -57,7 +61,6 @@ def rote_uso(data: ModeloRegistro, verify = Depends(api_door)):
 def rote_sobra(data: ModeloRegistro, verify = Depends(api_door)):
     return add_rest(name=data.name, value=data.value)
     
-
 @app.post('/reset')
 def rote_reset(verify = Depends(api_door)):
     return reset()
