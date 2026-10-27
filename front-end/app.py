@@ -40,10 +40,11 @@ def screen_add_meats():
         response = requests.get(f'{API_URL}/estoque', headers=API_ACESS)
         if response.status_code == 200: data = response.json()
         else:
-            st.warning('API DESLIGADA. LIGUE A API COM O SEGUINTE LINK E DEPOIS REINICIE O SITE: https://nativas-grill-estoque-manager.onrender.com/')
+            error_mensage = response.json().get('detail', 'Erro desconhecido')
+            st.error(error_mensage)
             st.stop()
     except:
-        st.warning('NÃO FOI POSSÍVEL ACESSAR O SERVIDOR.')
+        st.error('NÃO FOI POSSÍVEL ACESSAR O SERVIDOR.')
         st.stop()
     st.title('Anotações de carnes diárias')
     usage_meats = []
@@ -68,10 +69,12 @@ def screen_add_meats():
             package = {'name': meat_name, 'value': value}
             if value > 0:
                 response = requests.post(f'{API_URL}/uso', json=package, headers=API_ACESS)
-                result = response.json()
-                if result.get('status') == 'success': st.rerun()
-                elif result.get('status') == 'invalid' or result.get('status') == 'insufficient': st.warning('Valor insuficiente no estoque')
-                
+                if response.status_code != 200: 
+                    st.error(response.json().get('detail', 'Erro desconhecido'))
+                else:    
+                    st.success(f'{meat_name} adicionado {value} kg')
+                    time.sleep(1) 
+                    st.rerun()                               
             else:
                 st.error('Digite um valor maior que 0')
     with colb2:
@@ -79,7 +82,12 @@ def screen_add_meats():
             package = {'name': meat_name, 'value': value}
             if value > 0:
                 response = requests.post(f'{API_URL}/sobra', json=package, headers=API_ACESS)
-                st.rerun()
+                if response.status_code != 200:
+                    st.error(response.json().get('detail', 'Erro desconhecido'))
+                else:
+                    st.success(f'{meat_name} adicionado {value} kg')
+                    time.sleep(1)
+                    st.rerun()
             else:
                 st.error('Digite um valor maior que 0')
 
@@ -96,12 +104,19 @@ def screen_add_meats():
             return response.content
     with colb3:
         if st.button('🚨 RESETAR E SALVAR'):
-            warning()
-            
+            warning()           
     with colb4:
         if st.button('⟳ Reverter valor'):
             response = requests.post(f'{API_URL}/reverse', headers=API_ACESS)
-            st.rerun()
+            if response.status_code != 200:
+                st.error(response.json().get('detail', 'Erro desconhecido'))
+            else:
+                data = response.json()
+                name = data.get('name')
+                value = data.get('value')
+                st.success(f'{name} revertido {value} kg')
+                time.sleep(1)
+                st.rerun()
     with colb5:
         if st.button('sair'):
             st.session_state['logged'] = False
@@ -130,7 +145,8 @@ def screen_history_tab():
         
     if st.button('sair'):
         st.session_state['logged'] = False
-        st.rerun()   
+        st.rerun()
+
 def screen_storage():
     try:
         response_storage = requests.get(f'{API_URL}/allestoque', headers=API_ACESS)
@@ -152,7 +168,7 @@ def screen_storage():
         st.dataframe(df)
     st.title('Adicionar produtos ao estoque')
     selected_product = st.selectbox('Escolha o produto', [product for product in products], key='selected_product')
-    value = st.number_input('Quantidade (KG, QTD)')
+    value = st.number_input('Quantidade (KG, QTD)', format='%.3f')
     expiration_date = st.date_input('Digite a data de validade(ano/mês/dia)')
     col1, col2 = st.columns(2)
     with col1:
