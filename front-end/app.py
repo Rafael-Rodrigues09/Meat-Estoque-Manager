@@ -37,7 +37,7 @@ if st.session_state['logged'] == False:
     st.stop()
 def screen_add_meats():    
     status, response = request(f'{API_URL}/estoque', 'GET', API_ACESS)
-    if status: data = response
+    if status: data = response.json()
     else:
         st.error(response)
         st.stop()
@@ -95,40 +95,37 @@ def screen_add_meats():
             if st.button('NÃO'): st.rerun()
 
     def reset():
-            response = requests.post(f'{API_URL}/reset', headers=API_ACESS)
-            return response.content
+            status, response = request(f'{API_URL}/reset', 'POST', API_ACESS)
+            if status: return response.content  
+            else:
+                st.error(response)
+                st.stop()           
     with colb3:
         if st.button('🚨 RESETAR E SALVAR'):
             warning()           
     with colb4:
         if st.button('⟳ Reverter valor'):
-            response = requests.post(f'{API_URL}/reverse', headers=API_ACESS)
-            if response.status_code != 200:
-                st.error(response.json().get('detail', 'Erro desconhecido'))
-            else:
+            status, response = request(f'{API_URL}/reverse', 'POST', API_ACESS)
+            if status:
                 data = response.json()
                 name = data.get('name')
                 value = data.get('value')
                 st.success(f'{name} revertido {value} kg')
                 time.sleep(1)
                 st.rerun()
+            else:
+                st.error(response)
     with colb5:
         if st.button('sair'):
             st.session_state['logged'] = False
             st.rerun()
 
 def screen_history_tab():
-    try:
-        response = requests.get(f'{API_URL}/historico', headers=API_ACESS)
-        if response.status_code == 200:
-            data = response.json()
-        else:
-            st.warning('API DESLIGADA. LIGUE A API COM O SEGUINTE LINK E DEPOIS REINICIE O SITE: https://nativas-grill-estoque-manager.onrender.com/')
-            st.stop()    
-    except:
-        st.warning('NÃO FOI POSSÍVEL ACESSAR O SERVIDOR')
-        st.stop()        
-        
+    status, response = request(f'{API_URL}/historico', 'GET', API_ACESS)
+    if status: data = response.json()      
+    else:
+        st.error(response)
+        st.stop()
     st.title('Histórico de carnes')
     if data:
         df = pd.DataFrame(data)
@@ -143,18 +140,16 @@ def screen_history_tab():
         st.rerun()
 
 def screen_storage():
-    try:
-        response_storage = requests.get(f'{API_URL}/allestoque', headers=API_ACESS)
-        response_products = requests.get(f'{API_URL}/estoque', headers=API_ACESS)
-        if response_storage.status_code == 200: data = response_storage.json()
-        else:
-            st.warning('API DESLIGADA. LIGUE A API COM O SEGUINTE LINK E DEPOIS REINICIE O SITE: https://nativas-grill-estoque-manager.onrender.com/')
-            st.stop()
-        if response_products.status_code == 200: products = response_products.json()
-        else: 
-            st.warning('Sem produtos')
-    except:
-        st.warning('Não foi possivel acessar o servidor')
+    
+    status_storage, response_storage = request(f'{API_URL}/allestoque', 'GET', API_ACESS)
+    status_products, response_products = request(f'{API_URL}/estoque', 'GET', API_ACESS)
+    if status_storage: data = response_storage.json()
+    else:
+        st.error(response_storage)
+    if status_products: products = response_products.json()
+    else:
+        st.error(response_products)
+        st.stop()
     st.title('Estoque')
     if not data: st.info('Nada no estoque no momento')
     else:
@@ -169,8 +164,14 @@ def screen_storage():
     with col1:
         if st.button('Adicionar'): 
             if value > 0:
-                response = requests.post(f'{API_URL}/add-estoque', json={'name': selected_product, 'value': value, 'expiration_date': str(expiration_date)}, headers=API_ACESS)
-                st.rerun()
+                package = {'name': selected_product, 'value': value, 'expiration_date': str(expiration_date)}
+                status, response = request(f'{API_URL}/add-estoque', 'POST', API_ACESS, package)
+                if status:
+                    st.success(f'{selected_product} adicionado {value} kg')
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error(response)
             else:
                 st.warning('Digite um valor valido')
     with col2:

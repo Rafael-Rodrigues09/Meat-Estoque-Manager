@@ -13,13 +13,16 @@ def request(url, method, token, data=None):
         else:
             return False, "Erro: Metodo invalido"
         response.raise_for_status()
-        return True, response.json()        
+        return True, response    
     except requests.exceptions.Timeout:
         return False, "Erro: O servidor demorou muito para responder."
     except requests.exceptions.ConnectionError:
         return False, "Erro: Falha de conexão com a internet."
     except requests.exceptions.HTTPError as e:
-        return False, f"Erro da API: {e.response.status_code}. Detalhe: {e.response.json().get('detail')}"
+        try:
+            return False, e.response.json().get('detail')
+        except ValueError:
+            return False, f'Falha interna: {e.response.status_code}'
     except requests.exceptions.RequestException as e:
         return False, f"Erro inesperado de rede: {e}"
     except ValueError:
