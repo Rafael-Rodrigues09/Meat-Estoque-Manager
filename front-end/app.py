@@ -1,10 +1,10 @@
 import streamlit as st
-import requests
 from datetime import date
 from dotenv import load_dotenv
 import os
 import time
 import pandas as pd
+from requests_function import request
 
 st.set_page_config(page_title='Estoque Açougue', page_icon='🥩')
 
@@ -36,15 +36,10 @@ if st.session_state['logged'] == False:
             st.error('Senha incorreta')
     st.stop()
 def screen_add_meats():    
-    try:
-        response = requests.get(f'{API_URL}/estoque', headers=API_ACESS)
-        if response.status_code == 200: data = response.json()
-        else:
-            error_mensage = response.json().get('detail', 'Erro desconhecido')
-            st.error(error_mensage)
-            st.stop()
-    except:
-        st.error('NÃO FOI POSSÍVEL ACESSAR O SERVIDOR.')
+    status, response = request(f'{API_URL}/estoque', 'GET', API_ACESS)
+    if status: data = response
+    else:
+        st.error(response)
         st.stop()
     st.title('Anotações de carnes diárias')
     usage_meats = []
@@ -68,26 +63,26 @@ def screen_add_meats():
         if st.button('Registrar uso'):
             package = {'name': meat_name, 'value': value}
             if value > 0:
-                response = requests.post(f'{API_URL}/uso', json=package, headers=API_ACESS)
-                if response.status_code != 200: 
-                    st.error(response.json().get('detail', 'Erro desconhecido'))
-                else:    
+                status, response = request(f'{API_URL}/uso', 'POST', API_ACESS, package)
+                if status:
                     st.success(f'{meat_name} adicionado {value} kg')
                     time.sleep(1) 
-                    st.rerun()                               
+                    st.rerun()
+                else:
+                    st.error(response)                                                 
             else:
                 st.error('Digite um valor maior que 0')
     with colb2:
         if st.button('Registre a sobra'):
             package = {'name': meat_name, 'value': value}
             if value > 0:
-                response = requests.post(f'{API_URL}/sobra', json=package, headers=API_ACESS)
-                if response.status_code != 200:
-                    st.error(response.json().get('detail', 'Erro desconhecido'))
-                else:
+                status, response = request(f'{API_URL}/sobra', 'POST', API_ACESS, package)
+                if status:
                     st.success(f'{meat_name} adicionado {value} kg')
-                    time.sleep(1)
+                    time.sleep(1) 
                     st.rerun()
+                else:
+                    st.error(response)
             else:
                 st.error('Digite um valor maior que 0')
 
