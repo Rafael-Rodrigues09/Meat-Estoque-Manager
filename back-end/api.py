@@ -1,31 +1,15 @@
-import psycopg2
 import os
-from sqlalchemy import create_engine, String, Float, Integer, Column, select, update
-from sqlalchemy.orm import declarative_base, sessionmaker
 from fastapi import FastAPI, HTTPException, Header, Depends, Request
-from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, Field
-from datetime import date
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
-from database import connect, Meats, create_data, add_usage, add_rest, reset, get_data, reverse, get_history, add_lot, get_lot
-
+from database import create_data, add_usage, add_rest, reset, get_data, reverse, get_history, add_lot, get_lot
+from schemas import ModeloRegistro, ModeloLot
 load_dotenv()
 API_TOKEN = os.getenv('API_TOKEN')
 
 def api_door(x_token: str = Header(...)):
     if x_token != API_TOKEN:
         raise HTTPException(status_code=401, detail="Acesso negado")
-
-Base, engine, SessionLocal = connect()
-
-class ModeloRegistro(BaseModel):
-    name: str
-    value: float = Field(gt=0)
-
-class ModeloLot(BaseModel):
-    name: str
-    value: float = Field(gt=0)
-    expiration_date: date
 
 app = FastAPI()
 create_data()
@@ -35,7 +19,7 @@ def ValueError_handler(request: Request, exc: ValueError):
     return JSONResponse(status_code=400, content={'detail': str(exc)})
 
 @app.api_route('/health', methods=['GET', 'HEAD'])
-def check_health(): return {'status': 'valid'}
+def check_health(): return JSONResponse(status_code=200)
 
 @app.get('/estoque')
 def rote_show_data(verify = Depends(api_door)):
