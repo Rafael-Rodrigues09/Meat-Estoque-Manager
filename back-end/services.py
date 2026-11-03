@@ -1,11 +1,7 @@
 from sqlalchemy import select, update
 from models import Meats, History, Lot
 from connect_database import Base, engine, SessionLocal
-from datetime import date
-from fastapi.responses import FileResponse
-from fpdf import FPDF
-
-
+from reports import pdf_generate
 
 def create_data():
     meats_list = [
@@ -118,16 +114,7 @@ def reset():
     with SessionLocal() as session:
         query_values = select(Meats.name, Meats.usage_kg, Meats.rest_kg)
         values = session.execute(query_values).all()
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font('Arial', 'B', size=16)
-        pdf.cell(0, 3, txt='Relatório Nativas Grill Estoque Carnes', ln=1, align='C')
-        pdf.ln(10)
-        pdf.set_font('Arial', '', 10)  
-        for meat, usage, rest in values:
-            if usage != 0.0 or rest != 0.0:
-                pdf.cell(0, 7, txt=f"{meat}: USADO: {usage:.3f} | SOBRA: {rest:.3f}", ln=1, align='L')
-        pdf.output('backup.pdf')
+        file = pdf_generate(values)
         session.execute(
             update(Meats).values(
                 usage_kg=0.0,
@@ -135,8 +122,7 @@ def reset():
             )
         )
         session.commit()
-        return FileResponse(path='backup.pdf', filename=f'Backup{date.today()}.pdf', media_type='application/pdf')
-
+        return file
 def reverse():
     with SessionLocal() as session:
         last = session.scalars(select(History).where(History.is_reversed == False).order_by(History.id.desc())).first()

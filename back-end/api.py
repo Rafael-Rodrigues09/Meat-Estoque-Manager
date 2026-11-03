@@ -1,9 +1,11 @@
 import os
 from fastapi import FastAPI, HTTPException, Header, Depends, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from dotenv import load_dotenv
-from database import create_data, add_usage, add_rest, reset, get_data, reverse, get_history, add_lot, get_lot
+from services import create_data, add_usage, add_rest, reset, get_data, reverse, get_history, add_lot, get_lot
 from schemas import ModeloRegistro, ModeloLot
+from datetime import date
+
 load_dotenv()
 API_TOKEN = os.getenv('API_TOKEN')
 
@@ -47,7 +49,9 @@ def rote_sobra(data: ModeloRegistro, verify = Depends(api_door)):
     
 @app.post('/reset')
 def rote_reset(verify = Depends(api_door)):
-    return reset()
+    file = reset()
+    return FileResponse(path=file, filename=f'Backup{date.today()}.pdf', media_type='application/pdf')
+
 
 @app.post('/reverse')
 def reverse_value(verify = Depends(api_door)):
