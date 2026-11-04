@@ -13,6 +13,8 @@ services:
       - db
     env_file:
       - .env
+    volumes:
+      - ./back-end:/back
   frontend:
     build: ./front-end
     ports:
