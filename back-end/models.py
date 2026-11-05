@@ -17,6 +17,7 @@ class History(Base):
     value = Column(Numeric(10, 3))
     is_reversed = Column(Boolean, default=False)
     date = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    lot_id = Column(Integer)
 
 class Lot(Base):
     __tablename__ = 'lot'

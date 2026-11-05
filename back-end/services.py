@@ -89,14 +89,15 @@ def add_usage(name, value):
         remain = value
         for lot in query:
             if lot.current_kg <= remain:
-                remain -= lot.current_kg
+                session.add(History(name=name, type='usado', value=lot.current_kg, lot_id=lot.id))
+                remain -= lot.current_kg        
                 lot.current_kg = 0
-                lot.is_active = False
+                lot.is_active = False         
             elif lot.current_kg > remain:
+                session.add(History(name=name, type='usado', value=remain, lot_id=lot.id))
                 lot.current_kg -= remain
                 remain = 0
                 break
-        session.add(History(name=name, type='usado', value=value))
         meat.usage_kg += value
         session.commit()
         return {'name': name, 'value': value}
@@ -129,6 +130,9 @@ def reverse():
         if last:
             meat = session.scalars(select(Meats).where(Meats.name == last.name)).first()
             if last.type == 'usado':
+                query_lot = session.scalars(select(Lot).where(Lot.id == last.lot_id)).first()
+                if not query_lot: raise ValueError('Item invalido no estoque')
+                query_lot.current_kg += last.value
                 meat.usage_kg = meat.usage_kg - last.value
             elif last.type == 'sobra':
                 meat.rest_kg = meat.rest_kg - last.value

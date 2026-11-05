@@ -16,7 +16,7 @@ path = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, path)
 
 from connect_database import Base
-import models
+from models import Meats, History, Lot
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
