@@ -133,6 +133,7 @@ def reverse():
                 query_lot = session.scalars(select(Lot).where(Lot.id == last.lot_id)).first()
                 if not query_lot: raise ValueError('Item invalido no estoque')
                 query_lot.current_kg += last.value
+                if query_lot.current_kg > 0: query_lot.is_active = True
                 meat.usage_kg = meat.usage_kg - last.value
             elif last.type == 'sobra':
                 meat.rest_kg = meat.rest_kg - last.value
