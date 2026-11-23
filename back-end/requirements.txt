@@ -6,3 +6,5 @@ SQLAlchemy==2.0.50
 uvicorn
 fpdf
 alembic
+pwdlib[argon2]
+PyJWT

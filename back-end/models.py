@@ -2,6 +2,12 @@ from connect_database import Base
 from sqlalchemy import Column, Integer, String, Numeric, DateTime, Date, Boolean
 from datetime import datetime, timezone
 
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    username = Column(String(40), unique=True)
+    hash_pass = Column(String(255))
+    role = Column(String(20))    
 class Meats(Base):
     __tablename__ = 'meats'
     id = Column(Integer, primary_key=True)

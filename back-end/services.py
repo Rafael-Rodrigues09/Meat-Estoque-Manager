@@ -1,5 +1,5 @@
 from sqlalchemy import select, update
-from models import Meats, History, Lot
+from models import Meats, History, Lot, User
 from connect_database import Base, engine, SessionLocal
 from reports import pdf_generate
 
